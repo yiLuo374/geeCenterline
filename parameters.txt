@@ -1,0 +1,2 @@
+function	parameter	value
+noise_removal	minArea		1024
