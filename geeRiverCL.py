@@ -162,8 +162,8 @@ def classification(image, scale, method='minDis'):
         #minDis
         #Three land type simple regions: water, plant, sand (other)
         if 'SWIR1' in image.bandNames().getInfo():
-            #bands = ['Blue', 'Green', 'Red', 'NIR', 'SWIR1']
-            bands = ['Blue', 'Green', 'Red', 'NIR']
+            bands = ['Blue', 'Green', 'Red', 'NIR', 'SWIR1']
+            #bands = ['Blue', 'Green', 'Red', 'NIR']
         else: 
             bands = ['Blue', 'Green', 'Red', 'NIR']
         labels = 'samples'
