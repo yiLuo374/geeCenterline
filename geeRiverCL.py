@@ -939,3 +939,141 @@ def trim_centerline(imgIn, scale, length, iterate=5):
     
     return(ep3)
 
+def CalculateAngle(clCleaned):
+    """calculate the orthogonal direction of each pixel of the centerline
+    """
+
+    w3 = (ee.Kernel.fixed(9, 9, [
+    [135.0, 126.9, 116.6, 104.0, 90.0, 76.0, 63.4, 53.1, 45.0],
+    [143.1, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 36.9],
+    [153.4, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 26.6],
+    [166.0, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 14.0],
+    [180.0, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 1e-5],
+    [194.0, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 346.0],
+    [206.6, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 333.4],
+    [216.9, 0.0,	0.0,	0.0,	0.0,	0.0,	0.0,	0.0, 323.1],
+    [225.0, 233.1,  243.4,  256.0,  270.0,  284.0,  296.6,  306.9, 315.0]]))
+
+    combinedReducer = ee.Reducer.sum().combine(ee.Reducer.count(), None, True)
+
+    clAngle = (clCleaned.mask(clCleaned)
+        .rename(['clCleaned'])
+        .reduceNeighborhood(
+        reducer = combinedReducer,
+        kernel = w3,
+        inputWeight = 'kernel',
+        skipMasked = True))
+
+	## mask calculating when there are more than two inputs into the angle calculation
+    clAngleNorm = (clAngle
+        .select('clCleaned_sum')
+        .divide(clAngle.select('clCleaned_count'))
+        .mask(clAngle.select('clCleaned_count').gt(2).Not()))
+
+	## if only one input into the angle calculation, rotate it by 90 degrees to get the orthogonal
+    clAngleNorm = (clAngleNorm
+        .where(clAngle.select('clCleaned_count').eq(1), clAngleNorm.add(ee.Image(90))))
+
+    return clAngleNorm.rename(['orthDegree'])
+
+def GetWidth(clAngleNorm, segmentInfo, endInfo, DM, crs, bound, scale, sceneID, note):
+    """calculate the width of the river at each centerline pixel, measured according to the orthgonal direction of the river
+    """
+    def GetXsectionEnds(f):
+        xc = ee.Number(f.get('x'))
+        yc = ee.Number(f.get('y'))
+        orthRad = ee.Number(f.get('angle')).divide(180).multiply(math.pi)
+
+        width = ee.Number(f.get('toBankDistance')).multiply(1.5)
+        cosRad = width.multiply(orthRad.cos())
+        sinRad = width.multiply(orthRad.sin())
+        p1 = ee.Geometry.Point([xc.add(cosRad), yc.add(sinRad)], crs)
+        p2 = ee.Geometry.Point([xc.subtract(cosRad), yc.subtract(sinRad)], crs)
+
+        xlEnds = (ee.Feature(ee.Geometry.MultiPoint([p1, p2]).buffer(30), {
+            'xc': xc,
+            'yc': yc,
+            'longitude': f.get('lon'),
+            'latitude': f.get('lat'),
+            'orthogonalDirection': orthRad,
+            'MLength': width.multiply(2),
+            'p1': p1,
+            'p2': p2,
+            'crs': crs,
+            'image_id': sceneID,
+            'note': note
+            }))
+
+        return xlEnds
+
+    def SwitchGeometry(f):
+        return (f
+        .setGeometry(ee.Geometry.LineString(coords = [f.get('p1'), f.get('p2')], proj = crs, geodesic = False))
+        .set('p1', None).set('p2', None)) # remove p1 and p2
+
+    ## convert centerline image to a list. prepare for map function
+    clPoints = (clAngleNorm.rename(['angle'])
+    	.addBands(ee.Image.pixelCoordinates(crs))
+        .addBands(ee.Image.pixelLonLat().rename(['lon', 'lat']))
+        .addBands(DM.rename(['toBankDistance']))
+        .sample(
+            region = bound,
+            scale = scale,
+            projection = None,
+            factor = 1,
+            dropNulls = True
+        ))
+
+	## calculate the cross-section lines, returning a featureCollection
+    xsectionsEnds = clPoints.map(GetXsectionEnds)
+
+	## calculate the flags at the xsection line end points
+    endStat = (endInfo.reduceRegions(
+        collection = xsectionsEnds,
+        reducer = ee.Reducer.anyNonZero().combine(ee.Reducer.count(), None, True), # test endpoints type
+        scale = scale,
+        crs = crs))
+
+	## calculate the width of the river and other flags along the xsection lines
+    xsections1 = endStat.map(SwitchGeometry)
+    combinedReducer = ee.Reducer.mean()
+    xsections = (segmentInfo.reduceRegions(
+        collection = xsections1,
+        reducer = combinedReducer,
+        scale = scale,
+        crs = crs))
+
+    return xsections
+
+def CalculateOrthAngle(imgIn):
+    cl1px = imgIn.select(['cleanedCL'])
+    angle = CalculateAngle(cl1px)
+    imgOut = imgIn.addBands(angle)
+    return(imgOut)
+
+def prepExport(f):
+    f = (f.set({
+        'width': ee.Number(f.get('MLength')).multiply(f.get('channelMask')),
+        'endsInWater': ee.Number(f.get('any')).eq(1),
+        'endsOverEdge': ee.Number(f.get('count')).lt(2)}))
+
+    fOut = (ee.Feature(ee.Geometry.Point([f.get('longitude'), f.get('latitude')]), {})
+    .copyProperties(f, None, ['any', 'count', 'MLength', 'xc', 'yc', 'channelMask']))
+    return(fOut)
+
+def CalculateWidth(imgIn):
+    crs = imgIn.get('crs')
+    scale = imgIn.get('scale')
+    imgId = imgIn.get('image_id')
+    bound = imgIn.select(['riverMask']).geometry()
+    angle = imgIn.select(['orthDegree'])
+    infoEnds = imgIn.select(['riverMask'])
+    infoExport = (imgIn.select('channelMask')
+    .addBands(imgIn.select('^flag.*'))
+    .addBands(dem.rename(['flag_elevation'])))
+    dm = imgIn.select(['distanceMap'])
+
+    widths = GetWidth(angle, infoExport, infoEnds, dm, crs, bound, scale, imgId, '').map(prepExport)
+
+    return(widths)
+
