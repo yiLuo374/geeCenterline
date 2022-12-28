@@ -1,29 +1,29 @@
 import ee
 
-def ndvi(img):
+def NDVI(img):
     ndvi = img.normalizedDifference(['NIR', 'Red']).rename("NDVI")
     return(ndvi)
 
-def ndwi(img):
+def NDWI(img):
     ndwi = img.normalizedDifference(['Green', 'NIR']).rename('NDWI')
     return(ndwi)
 
-def mndwi(img):
+def MNDWI(img):
     mndwi = img.normalizedDifference(['Green', 'SWIR1']).rename('MNDWI')
     return(mndwi)
 
-def Evi(img):
-     evi = img.expression('2.5 * (NIR - Red) / (1 + NIR + 6 * Red - 7.5 * Blue)', {
+def EVI(img):
+    evi = img.expression('2.5 * (NIR - Red) / (1 + NIR + 6 * Red - 7.5 * Blue)', {
     'NIR': img.select(['NIR']),
     'Red': img.select(['Red']),
     'Blue': img.select(['Blue'])
-    })
-    return evi.rename(['EVI'])
+    }).rename('EVI')
+    return(evi)
 
-def classification_minDis(img, thr1=-1, thr2=0, thr3=0.2, thr3=0.3, thr4=0.6, thr5=1):
+def classification(img, thr1=-1, thr2=0, thr3=0.2, thr4=0.3, thr5=0.6, thr6=1, numPts=1000):
     crs = img.projection().crs().getInfo()
     scl = img.projection().nominalScale()
-    ndvi = ndvi
+    ndvi = NDVI(img)
     if 'SWIR1' in img.bandNames().getInfo():
         bands = ['Blue', 'Green', 'Red', 'NIR', 'SWIR1']
     else: 
@@ -33,14 +33,14 @@ def classification_minDis(img, thr1=-1, thr2=0, thr3=0.2, thr3=0.3, thr4=0.6, th
     sand = ndvi.lt(thr4).And(ndvi.gt(thr3)).multiply(2)
     vege = ndvi.gt(thr5).And(ndvi.lt(thr6)).multiply(3) #0.6
     wsv = water.add(sand.add(vege)).selfMask().rename('samples')
-    samples = wsv.stratifiedSample(**{'numPoints': 100, 'projection': crs, 'scale':30, 'geometries': True})
-    training = image.select(bands).sampleRegions(**{
+    samples = wsv.stratifiedSample(**{'numPoints': numPts, 'projection': crs, 'scale':scl, 'geometries': True})
+    training = img.select(bands).sampleRegions(**{
                 'collection': samples,
                 'properties': ['samples'],
-                'scale' : scale
+                'scale' : 3
             })
     trained = ee.Classifier.smileRandomForest(10).train(training, 'samples', bands)
-    classified = image.select(bands).classify(trained).reproject(crs = crs, scale = scale)
+    classified = img.select(bands).classify(trained)
     return classified
 
 def otsu_hist(img, scale, ltb):
