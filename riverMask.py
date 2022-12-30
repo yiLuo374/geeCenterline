@@ -19,3 +19,10 @@ def noise_removal(image, maxArea, connectedness):
         select('labels').reproject(crs = crs, scale = scale)
     image2 = image.add(image1.eq(0).eq(0).unmask()).eq(1).selfMask()
     return image2
+
+# river mask from landsat
+def mask_hrs(image, r=1.5, i=3):
+    crs = image.projection().crs().getInfo()
+    scale = image.projection().nominalScale()
+    mask = image.focal_max(radius = r, iterations = i).reproject(crs = crs, scale = scale)
+    return mask
