@@ -281,19 +281,12 @@ def ExtractJoints(CL1px):
     
     return jts
 
-def ExtractJoints1(CL1px):
-    
-    k1 = ee.Kernel.fixed(3, 3, [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-    jts = CL1px.reduceNeighborhood(ee.Reducer.sum(), k1).gte(4).selfMask()
-    
-    return jts
-
 def CleanCenterline(cl1px, maxBranchLengthToRemove, scale, iterate=5):
     
     cl1px1 = cl1px
     for i in range(iterate):
         endsByNeighbors = ExtractEndpoints(cl1px1)
-        joints = ExtractJoints1(cl1px1)
+        joints = ExtractJoints(cl1px1)
         sep = cl1px1.add(joints.unmask().focal_max(1.5, "square")).eq(1).selfMask()
         costMap = (sep.cumulativeCost(
             source = endsByNeighbors,
@@ -303,32 +296,13 @@ def CleanCenterline(cl1px, maxBranchLengthToRemove, scale, iterate=5):
         cl1px1 = cl1px1.updateMask(branchMask.Not())
     return (cl1px1)
 
-def CalculateCenterline1(imgIn, thre=0.7):
+def CalculateCenterline(imgIn, thre=0.7):
     scale = imgIn.projection().nominalScale().getInfo()
     crs = imgIn.projection().crs().getInfo()
     distM = CalcDistanceMap(imgIn, 60, scale).reproject(crs = crs, scale = scale)
     gradM = CalcGradientMap(distM, 2, scale).reproject(crs = crs, scale = scale)
     cl1 = CalcOnePixelWidthCenterline(imgIn, gradM, thre).reproject(crs = crs, scale = scale)
     return(cl1)
-
-def CalculateCenterline(imgIn, thre=0.9):
-    scale = imgIn.projection().nominalScale().getInfo()
-    distM = CalcDistanceMap(imgIn, 60, scale)
-    gradM = CalcGradientMap(distM, 2, scale)
-    cl1 = CalcOnePixelWidthCenterline(imgIn, gradM, thre)
-    k1 = ee.Kernel.fixed(3, 3, [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-    clEC = cl1.selfMask().reduceNeighborhood(ee.Reducer.sum(), k1).lte(5).selfMask()
-    cl1 = noise_removal(clEC, 3, 500, 8)
-    return(cl1)
-
-def trim_centerline(imgIn, length, iterate=5):
-    scale = imgIn.projection().nominalScale().getInfo()
-    trimed = CleanCenterline(imgIn, length, scale, iterate)
-    ep1 = ExtractEndpoints(trimed)
-    ep2 = trimed.unmask().add(ep1.unmask()).eq(1)
-    ep3 = Skeletonize(ep2.unmask().focal_max().focal_min(), 1, 1)
-    
-    return(ep3)
 
 def CalculateAngle(clCleaned):
     """calculate the orthogonal direction of each pixel of the centerline
@@ -467,3 +441,73 @@ def CalculateWidth(imgIn):
     widths = GetWidth(angle, infoExport, infoEnds, dm, crs, bound, scale, imgId, '').map(prepExport)
 
     return(widths)
+
+def Zhang_Suen(image, crs, scale):
+    weights = [[1,1,1], [1,1,1], [1,1,1]]
+    kernel = ee.Kernel.fixed(weights = weights)
+    weights1 = [[0,1,0], [0,0,1], [0,1,0]]
+    kernel1 = ee.Kernel.fixed(weights = weights1)
+    weights2 = [[0,0,0], [1,0,1], [0,1,0]]
+    kernel2 = ee.Kernel.fixed(weights = weights2)
+    weights3 = [[1,0,0], [0,0,0], [0,0,0]]
+    kernel3 = ee.Kernel.fixed(weights = weights3)
+    weights4 = [[0,1,0], [0,0,0], [0,0,0]]
+    kernel4 = ee.Kernel.fixed(weights = weights4)
+    weights5 = [[0,0,1], [0,0,0], [0,0,0]]
+    kernel5 = ee.Kernel.fixed(weights = weights5)
+    weights6 = [[0,0,0], [0,0,1], [0,0,0]]
+    kernel6 = ee.Kernel.fixed(weights = weights6)
+    weights7 = [[0,0,0], [0,0,0], [0,0,1]]
+    kernel7 = ee.Kernel.fixed(weights = weights7)
+    weights8 = [[0,0,0], [0,0,0], [0,1,0]]
+    kernel8 = ee.Kernel.fixed(weights = weights8)
+    weights9 = [[0,0,0], [0,0,0], [1,0,0]]
+    kernel9 = ee.Kernel.fixed(weights = weights9)
+    weights10 = [[0,0,0], [1,0,0], [0,0,0]]
+    kernel10 = ee.Kernel.fixed(weights = weights10)
+    weights11 = [[0,1,0], [1,0,1], [0,0,0]]
+    kernel11 = ee.Kernel.fixed(weights = weights11)
+    weights12 = [[0,1,0], [1,0,0], [0,1,0]]
+    kernel12 = ee.Kernel.fixed(weights = weights11)
+    clLS_01p = ee.Image()
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel3).reproject(crs = crs, scale = scale).rename('1'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel4).reproject(crs = crs, scale = scale).rename('2'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel5).reproject(crs = crs, scale = scale).rename('3'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel6).reproject(crs = crs, scale = scale).rename('4'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel7).reproject(crs = crs, scale = scale).rename('5'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel8).reproject(crs = crs, scale = scale).rename('6'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel9).reproject(crs = crs, scale = scale).rename('7'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel10).reproject(crs = crs, scale = scale).rename('8'))
+    clLS_01p = clLS_01p.addBands(image.reduceNeighborhood(ee.Reducer.count(), kernel3).reproject(crs = crs, scale = scale).rename('9'))
+    clLS_01p = clLS_01p.select(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    clLS_01p = clLS_01p.toArray()
+    mat = ee.Array([
+        [10, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 10, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 10, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 10, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 10, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 10, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 10, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 10, 1]
+    ])
+    A = ee.Image(mat).matrixMultiply(clLS_01p.toArray(1)).arrayProject([0]).eq(ee.Array([1,1,1,1,1,1,1,1]))
+    A1 = A.arrayDotProduct(ee.Image(ee.Array([1,1,1,1,1,1,1,1])))
+    clLS_count = image.reduceNeighborhood(ee.Reducer.count(), kernel)
+    clLS_count1 = image.reduceNeighborhood(ee.Reducer.count(), kernel1)
+    clLS_count2 = image.reduceNeighborhood(ee.Reducer.count(), kernel2)
+    clLS = clLS_count.gt(2).And(clLS_count.lt(6)).And(clLS_count1.lt(3)).And(clLS_count2.lt(3)).And(A1.eq(1)).selfMask()
+    clLS_count11 = image.reduceNeighborhood(ee.Reducer.count(), kernel11)
+    clLS_count21 = image.reduceNeighborhood(ee.Reducer.count(), kernel12)
+    clLS1 = clLS_count.gt(2).And(clLS_count.lt(6)).And(clLS_count11.lt(3)).And(clLS_count21.lt(3)).And(A1.eq(1)).selfMask()
+    clLS2 = clLS.Or(clLS1)
+    return(clLS1)
+
+def cl(image, n):
+    crs = image.projection().crs().getInfo()
+    scale = image.projection().nominalScale().getInfo()
+    image1 = image
+    for i in range(n):
+        remove = Zhang_Suen(image1, crs, scale)
+        image1 = image1.subtract(remove.unmask()).eq(1).selfMask()
+    return(image1.reproject(crs = crs, scale = scale))
