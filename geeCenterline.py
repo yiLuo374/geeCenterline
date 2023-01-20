@@ -20,7 +20,13 @@ def load_file(assetID, bands=None, bandnames=None):
     
     if tp == 'IMAGE':
         return load_image(assetID, bands, bandnames)
-        
+
+def batch_load(IDlist, bands, bandnames):
+    uris = ee.List(IDlist)
+    images = uris.map(ee.Image.loadGeoTIFF).select(bands).rename(bandnames)
+    collection = ee.ImageCollection(images)
+    return collection
+
 def load_image(assetID, bands, names):
     image = ee.Image(assetID).select(bands).rename(names)
     return image
@@ -153,7 +159,7 @@ def CalcDistanceMap(img, neighborhoodSize, scale):
     dmeters = dpixel.multiply(scale) #// for a given scale
     DM = dmeters.mask(dpixel.lte(neighborhoodSize).And(imgD2))
 
-    return(DM)
+    return DM
 
 def CalcGradientMap(image, gradMethod, scale):
     if (gradMethod == 1): # GEE .gradient() method
@@ -176,14 +182,14 @@ def CalcGradientMap(image, gradMethod, scale):
         dy = image.convolve(k_dy)
         g = dx.multiply(dx).add(dy.multiply(dy)).divide(scale.multiply(scale))
 
-    return(g)
+    return g
 
 def CalcOnePixelWidthCenterline(img, GM, hGrad):
     imgD2 = img.focal_max(1.5, 'circle', 'pixels', 2)
     cl = ee.Image(GM).mask(imgD2).lte(hGrad).And(img)
     # // apply skeletonization twice
     cl1px = Skeletonize(cl, 2, 1)
-    return(cl1px)
+    return cl1px
 
 def ExtractEndpoints(CL1px):
     clnot = CL1px.unmask().Not()
@@ -268,7 +274,7 @@ def CleanCenterline(cl1px, maxBranchLengthToRemove, scale, iterate=5):
             geodeticDistance = True))
         branchMask = costMap.gte(0).unmask(0)
         cl1px1 = cl1px1.updateMask(branchMask.Not())
-    return (cl1px1)
+    return cl1px1
 
 def CalculateCenterline(imgIn, thre=0.7):
     scale = imgIn.projection().nominalScale().getInfo()
@@ -276,7 +282,7 @@ def CalculateCenterline(imgIn, thre=0.7):
     distM = CalcDistanceMap(imgIn, 60, scale).reproject(crs = crs, scale = scale)
     gradM = CalcGradientMap(distM, 2, scale).reproject(crs = crs, scale = scale)
     cl1 = CalcOnePixelWidthCenterline(imgIn, gradM, thre).reproject(crs = crs, scale = scale)
-    return(cl1)
+    return cl1
 
 def CalculateAngle(clCleaned):
     """calculate the orthogonal direction of each pixel of the centerline
@@ -388,7 +394,7 @@ def CalculateOrthAngle(imgIn):
     cl1px = imgIn.select(['cleanedCL'])
     angle = CalculateAngle(cl1px)
     imgOut = imgIn.addBands(angle)
-    return(imgOut)
+    return imgOut
 
 def prepExport(f):
     f = (f.set({
@@ -398,7 +404,7 @@ def prepExport(f):
 
     fOut = (ee.Feature(ee.Geometry.Point([f.get('longitude'), f.get('latitude')]), {})
     .copyProperties(f, None, ['any', 'count', 'MLength', 'xc', 'yc', 'channelMask']))
-    return(fOut)
+    return fOut
 
 def CalculateWidth(imgIn):
     crs = imgIn.get('crs')
@@ -414,7 +420,7 @@ def CalculateWidth(imgIn):
 
     widths = GetWidth(angle, infoExport, infoEnds, dm, crs, bound, scale, imgId, '').map(prepExport)
 
-    return(widths)
+    return widths
 
 def Zhang_Suen(image, crs, scale):
     weights = [[1,1,1], [1,1,1], [1,1,1]]
@@ -484,4 +490,4 @@ def cl(image, n):
     for i in range(n):
         remove = Zhang_Suen(image1, crs, scale)
         image1 = image1.subtract(remove.unmask()).eq(1).selfMask()
-    return(image1.reproject(crs = crs, scale = scale))
+    return image1.reproject(crs = crs, scale = scale)
