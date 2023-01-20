@@ -15,6 +15,20 @@ This package aims to provide a general workflow for users to identify water and 
     </div>
 </div>
 
+<div id="image-table">
+    <table>
+	    <tr>
+    	    <td style="padding:10px">
+        	    <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/original.gif" width="200"/>
+      	    </td>
+            <td style="padding:10px">
+            	<img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/classified.gif" width="300"/>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
 ## Features
 
  - Water surface and sand surface classification for remote sencsing images with at lest four bands: Red, Green, Blue, and Near-infrared.
