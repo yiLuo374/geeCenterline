@@ -491,3 +491,49 @@ def cl(image, n):
         remove = Zhang_Suen(image1, crs, scale)
         image1 = image1.subtract(remove.unmask()).eq(1).selfMask()
     return image1.reproject(crs = crs, scale = scale)
+
+
+def batch_load_LS(collection, bandnames):
+    l = list()
+    bands_in_LS1 = ['SR_B3', 'SR_B2', 'SR_B1', 'SR_B4', 'SR_B5']
+    bands_in_LS2 = ['SR_B4', 'SR_B3', 'SR_B2', 'SR_B5', 'SR_B6']
+    for i in collection:
+        n = int(i.split('/')[1][3])
+        if n < 8:
+            l.append(ee.Image(i).select(bands_in_LS1).rename(bandnames))
+        else:
+            l.append(ee.Image(i).select(bands_in_LS2).rename(bandnames))
+    img_c = ee.ImageCollection(l)
+    return img_c
+
+def ref_cr(img):
+    return img.multiply(0.0000275).add(-0.2)
+
+def wrap_classification(collection, thr2=0, thr3=0.2, thr4=0.3, thr5=0.6, numPts=100):
+    thr2=0
+    thr3=0.2
+    thr4=0.3
+    thr5=0.6
+    numPts=100
+    def classification(image):
+        crs = image.projection().crs()
+        ndvi = image.normalizedDifference(['NIR', 'Red'])
+        scale = image.projection().nominalScale()
+        #minDis
+        #Three land type simple regions: water, plant, sand (other)
+        bands = image.bandNames()
+        labels = 'samples'
+        water = ndvi.lt(thr2)
+        sand = ndvi.lt(thr4).And(ndvi.gt(thr3)).multiply(2)
+        vege = ndvi.gt(thr5).multiply(3)
+        wsv = water.add(sand.add(vege)).selfMask().rename('samples')
+        samples = wsv.stratifiedSample(**{'numPoints': numPts, 'projection': crs, 'scale':30, 'geometries': True})
+        training = image.select(bands).sampleRegions(**{
+                    'collection': samples,
+                    'properties': ['samples'],
+                    'scale' : scale
+                })
+        trained = ee.Classifier.minimumDistance().train(training, 'samples', bands)
+        classified = image.select(bands).classify(trained)
+        return classified
+    return collection.map(classification)
