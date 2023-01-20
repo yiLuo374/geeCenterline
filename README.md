@@ -8,10 +8,10 @@ This package aims to provide a general workflow for users to identify water and 
 
 <div style="display:flex">
     <div style="flex:1;padding-right:10px;">
-        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/original.gif" width="300"/>
+        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/original.gif" width="200"/>
     </div>
     <div style="flex:1;padding-left:10px;">
-        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/classified.gif" width="300"/>
+        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/classified.gif" width="200"/>
     </div>
 </div>
 
