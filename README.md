@@ -5,6 +5,16 @@
 
 This package aims to provide a general workflow for users to identify water and sand surfaces from multiple remote sensing image products, such as Landsat and PlanetScope, and obtain river planform geometries, including one-pixel-wide river centerline and river width, from the river mask obtained from the remote sensing images.
 ![alt text](https://github.com/yiLuo374/geeRiverCl/blob/main/img/workflow.jpg)
+
+<div style="display:flex">
+    <div style="flex:1;padding-right:10px;">
+        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/original.gif" width="300"/>
+    </div>
+    <div style="flex:1;padding-left:10px;">
+        <img src="https://github.com/yiLuo374/geeRiverCl/blob/main/img/classified.gif" width="300"/>
+    </div>
+</div>
+
 ## Features
 
  - Water surface and sand surface classification for remote sencsing images with at lest four bands: Red, Green, Blue, and Near-infrared.
