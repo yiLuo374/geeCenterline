@@ -9,7 +9,7 @@
 - One-pixel wide river centerline extraction.
 
 ## Why geeCenterline?
-Friendly to river planform and centerline extraction on large areas and from a collection of multiple remote sensing images:
+The algorithm is friendly to river planform and centerline extraction over expansive regions from images collected from multiple dates.
 - Highly automated.
 - Free cloud space for high-speed computation provided by GEE.
 - Performed well on different imagery collections ([PlanetScope](https://developers.planet.com/docs/data/planetscope/) and [Landsat](https://landsat.gsfc.nasa.gov/) in the example).
