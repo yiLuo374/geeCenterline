@@ -1,11 +1,23 @@
 # geeCenterline
-**A framework for river centerline extraction and sediment bar identification from satellite images based on [Google Earth Engine Python API](https://developers.google.com/earth-engine/tutorials/community/intro-to-python-api).** 
-## Introduction
-**geeCenterline** is a python package designed for river centerline extraction and sediment bar identification from multi-scale remote sensing images. This package is based on Google Earth Engine, which allow users to make the use of Google Cloud for computation to save local resources. 
+**For *river centerline extraction* and *sediment bar identification* from remote sensing images based on [Google Earth Engine (GEE) Python API](https://developers.google.com/earth-engine/tutorials/community/intro-to-python-api)**
 
-This package aims to provide a general workflow for users to identify water and sand surfaces from multiple remote sensing image products, such as Landsat and PlanetScope, and obtain river planform geometries, including one-pixel-wide river centerline and river width, from the river mask obtained from the remote sensing images.
+![Static Badge](https://img.shields.io/badge/License-MIT-blue)
+
+## What Can geeCenterline Do?
+- Water and sand identification.
+- Automatic river identification from water mask.
+- One-pixel wide river centerline extraction.
+
+## Why geeCenterline?
+- Friendly to river planform and centerline extraction on large areas and from a collection of multiple remote sensing images:
+- Highly automated.
+- Free cloud space for high-speed computation provided by GEE.
+- Performed well on different imagery collections ([PlanetScope](https://developers.planet.com/docs/data/planetscope/) and [Landsat](https://landsat.gsfc.nasa.gov/) in the example).
+- Require less spectral bands (RGB and near-infared only).
+
+## Extract River Centerline
 ![alt text](https://github.com/yiLuo374/geeRiverCl/blob/main/img/workflow.jpg)
-
+## Masked River and Sandbar Migration
 <div id="image-table">
     <table>
 	    <tr>
@@ -18,14 +30,6 @@ This package aims to provide a general workflow for users to identify water and 
         </tr>
     </table>
 </div>
-
-
-## Features
-
- - Water surface and sand surface classification for remote sencsing images with at lest four bands: Red, Green, Blue, and Near-infrared.
- - Identify the river mask from the water mask.
- - Extract one-pixel-wide river centerline.
- - Obtain the width of the river.
 
 ## Prerequests
  - Sign up for [Google Earth Engine](https://earthengine.google.com/)
