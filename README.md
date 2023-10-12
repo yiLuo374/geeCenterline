@@ -1,7 +1,7 @@
 # geeCenterline
 **For *river centerline extraction* and *sediment bar identification* from remote sensing images based on [Google Earth Engine (GEE) Python API](https://developers.google.com/earth-engine/tutorials/community/intro-to-python-api)**
 
-![Static Badge](https://img.shields.io/badge/License-MIT-blue)
+[![Static Badge](https://img.shields.io/badge/License-MIT-blue)](https://opensource.org/license/mit/)
 
 ## What Can geeCenterline Do?
 - Water and sand identification.
@@ -9,11 +9,11 @@
 - One-pixel wide river centerline extraction.
 
 ## Why geeCenterline?
-- Friendly to river planform and centerline extraction on large areas and from a collection of multiple remote sensing images:
+Friendly to river planform and centerline extraction on large areas and from a collection of multiple remote sensing images:
 - Highly automated.
 - Free cloud space for high-speed computation provided by GEE.
 - Performed well on different imagery collections ([PlanetScope](https://developers.planet.com/docs/data/planetscope/) and [Landsat](https://landsat.gsfc.nasa.gov/) in the example).
-- Require less spectral bands (RGB and near-infared only).
+- Require fewer spectral bands (RGB and near-infrared only).
 
 ## Extract River Centerline
 ![alt text](https://github.com/yiLuo374/geeRiverCl/blob/main/img/workflow.jpg)
@@ -31,14 +31,14 @@
     </table>
 </div>
 
-## Prerequests
+## Prerequisites
  - Sign up for [Google Earth Engine](https://earthengine.google.com/)
  -  Python >= 3.7
  - NumPy
  -  [earthengine-api](https://developers.google.com/earth-engine/guides/python_install)
  - [geemap](https://github.com/giswqs/geemap#installation)
  - [Jupyter Notebook](https://jupyter.org/)
- It is recomanded to install [Anaconda](https://jupyter.org/) and create a virtual environment for Google Earth Engine and install other packages:
+ It is recommended to install [Anaconda](https://jupyter.org/) and create a virtual environment for Google Earth Engine and install other packages:
 ```
 conda create -n gee python numpy
 conda activate gee
