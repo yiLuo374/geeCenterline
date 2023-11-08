@@ -33,23 +33,20 @@ The algorithm is friendly to river planform and centerline extraction over expan
 
 ## Prerequisites
  - Sign up for [Google Earth Engine](https://earthengine.google.com/)
- -  Python >= 3.7
+ - Python >= 3.7
  - NumPy
- -  [earthengine-api](https://developers.google.com/earth-engine/guides/python_install)
+ - Scipy
+ - [earthengine-api](https://developers.google.com/earth-engine/guides/python_install)
  - [geemap](https://github.com/giswqs/geemap#installation)
  - [Jupyter Notebook](https://jupyter.org/)
- It is recommended to install [Anaconda](https://jupyter.org/) and create a virtual environment for Google Earth Engine and install other packages:
+ It is recommended to install [Miniconda](https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html), and create a virtual environment for GEE and other packages:
 ```
-conda create -n gee python numpy
-conda activate gee
-conda install -c conda-forge jupyter
-conda install -c conda-forge earthengine-api
-conda install geemap -c conda-forge
+conda create -n geeCenterline -c conda-forge python=3 numpy scipy jupyterlab nb_conda_kernels earthengine-api geemap
+conda activate geeCenterline
 ```
 You can also install these packages by `pip`:
 ```
-pip install jupyter notebook
-pip install numpy earthengine-api geemap
+python -m pip install numpy scipy jupyterlab earthengine-api geemap
 ```
 ## Example data sources
 ### Data of the Tallahatchie River & the Big Sunflower River
